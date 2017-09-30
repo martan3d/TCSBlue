@@ -1,0 +1,1 @@
+{"layout": "internal", "orientation": "portrait", "package": "com.domain.tcc.program", "include_pil": false, "expansion": false, "name": "TCSWOW", "source": false, "icon_name": "TCSWOW", "version": "1.0", "permissions": ["INTERNET", "VIBRATE"], "include_sqlite": false, "numeric_version": "1"}
