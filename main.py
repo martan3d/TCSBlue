@@ -17,81 +17,6 @@ try:
 except:
    android = None
 
-# Class for serial communication using USB-OTG cable in an Android OS.                                                               
-class Serial:                                                                                                                        
-    def __init__(self,port,speed):                                                                                                   
-        self.Context             = autoclass('android.content.Context')                                                              
-        self.UsbConstants        = autoclass('android.hardware.usb.UsbConstants')                                                    
-        self.UsbDevice           = autoclass('android.hardware.usb.UsbDevice')                                                       
-        self.UsbDeviceConnection = autoclass('android.hardware.usb.UsbDeviceConnection')                                             
-        self.UsbEndpoint         = autoclass('android.hardware.usb.UsbEndpoint')                                                     
-        self.UsbInterface        = autoclass('android.hardware.usb.UsbInterface')                                                    
-        self.UsbManager          = autoclass('android.hardware.usb.UsbManager')                                                      
-        self.UsbRequest          = autoclass('android.hardware.usb.UsbRequest')                                                      
-        self.PythonActivity      = autoclass('org.renpy.android.PythonActivity')                                                     
-        self.activity            = self.PythonActivity.mActivity                                                                     
-        self.speed               = speed                                                                                             
-        self.port                = port                                                                                              
-        self.ReadCache           = []                                                                                                
-        self.usb_mgr             = cast(self.UsbManager, self.activity.getSystemService(self.Context.USB_SERVICE))                   
-        print [d.getKey() for d in self.usb_mgr.getDeviceList().entrySet().toArray()]
-        self.device              = self.usb_mgr.getDeviceList().get(port)
-        self.cmd                 = 'k00'
-        if self.device:
-            Intent                = autoclass('android.content.Intent')
-            PendingIntent         = autoclass('android.app.PendingIntent')
-            ACTION_USB_PERMISSION = "com.access.device.USB_PERMISSION"
-            intent                = Intent(ACTION_USB_PERMISSION)
-            pintent               = PendingIntent.getBroadcast(self.activity,0,intent,0)
-            self.usb_mgr.requestPermission(self.device,pintent)
-            if self.usb_mgr.hasPermission(self.device):
-                print 'Device permission granted!'
-                print 'InterfaceCount: ', self.device.getInterfaceCount()
-                self.intf          = cast(self.UsbInterface, self.device.getInterface(0))
-                self.UsbConnection = cast(self.UsbDeviceConnection,self.usb_mgr.openDevice(self.device))
-                print self.UsbConnection
-                self.UsbConnection.claimInterface(self.intf, True)
-                print 'SerialNumber: ', self.UsbConnection.getSerial()
-                self.UsbConnection.controlTransfer(0x40, 0, 0, 0, None, 0, 0)
-                self.UsbConnection.controlTransfer(0x40, 0, 1, 0, None, 0, 0)
-                self.UsbConnection.controlTransfer(0x40, 0, 2, 0, None, 0, 0)
-                self.UsbConnection.controlTransfer(0x40, 2, 0, 0, None, 0, 0)               
-                self.UsbConnection.controlTransfer(0x40, 3, 0x0034, 0, None, 0, 0)               
-                self.UsbConnection.controlTransfer(0x40, 4, 8, 0, None, 0, 0)               
-                for i in xrange(0, self.intf.getEndpointCount()):
-                    if self.intf.getEndpoint(i).getType() == self.UsbConstants.USB_ENDPOINT_XFER_BULK:
-                        if self.intf.getEndpoint(i).getDirection() == self.UsbConstants.USB_DIR_IN:
-                            self.epIN  = self.intf.getEndpoint(i)
-                        elif self.intf.getEndpoint(i).getDirection() == self.UsbConstants.USB_DIR_OUT:
-                            self.epOUT = self.intf.getEndpoint(i)
-            else:
-                print 'Device permission not granted!'
-        else:
-            print 'Device not found.'
-            sys.exit()
-        return
-    def send(self,msg):   
-        MsgOut    = msg
-        MsgOutHex = map(ord,MsgOut)
-        self.UsbConnection.bulkTransfer(self.epOUT, MsgOutHex, len(MsgOutHex), 0)
-        return True
-    def read(self,BufSize=35):
-        time.sleep(0.03)
-        response = [0]*BufSize
-        length   = self.UsbConnection.bulkTransfer(self.epIN, response, len(response), 50)
-        if length >= 0:
-            self.ReadCache = response
-        return True
-    def asyncRead(self):
-        self.send(self.cmd)
-        self.read()
-        return
-    def disconnet(self):
-        self.UsbConnection.close()
-        return True
-   
-   
-   
 class Bluetooth:
     def __init__(self):
         self.BluetoothAdapter = autoclass('android.bluetooth.BluetoothAdapter') 
@@ -181,7 +106,7 @@ PBY = 49
 KEYS = 13
 
 ##
-## Screen - Knob with Function Keys
+## Screen - Knob with Function Keys  TCS WOW VERSION  ******************************************
 ##          
 
 class mainScreen:
@@ -192,7 +117,9 @@ class mainScreen:
         self.posThrottle = 630
         self.lastThrottle = 500
         self.adapterName = ""
-
+        self.coupler0 = False
+        self.coupler1 = False
+        
         for i in range(0,25):
             self.downkeys.append(False)
 
@@ -213,73 +140,98 @@ class mainScreen:
         self.b9      = pygame.image.load('images/button-right.png').convert()
         self.keydown = pygame.image.load('images/button-blank.png').convert()
 
-        self.keys.append([ [163, 550], self.b0, 100, False, [BUTTONX, BUTTONY], self.keydown ] )   # direction
-        self.keys.append([ [312, 550], self.b5, 101, False, [BUTTONX, BUTTONY], self.keydown ] )   # stop
+        self.keys.append([ [160, 550], self.b0, 100, False, [BUTTONX, BUTTONY], self.keydown ] )   # direction
+        self.keys.append([ [315, 550], self.b5, 101, False, [BUTTONX, BUTTONY], self.keydown ] )   # stop
 
-        self.keys.append([ [163, 400], self.b1, 0xf0, False, [BUTTONX, BUTTONY], self.keydown ] )  # Lights
-        self.keys.append([ [312, 400], self.b2, 0xf1, False, [BUTTONX, BUTTONY], self.keydown ] )  # Bell
+        self.keys.append([ [160, 400], self.b1, 0xf0, False, [BUTTONX, BUTTONY], self.keydown ] )  # Lights
+        self.keys.append([ [315, 400], self.b2, 0xf1, False, [BUTTONX, BUTTONY], self.keydown ] )  # Bell
 
-        self.keys.append([ [163, 250], self.b4, 0xf3, False, [BUTTONX, BUTTONY], self.keydown ] )  # Horn blue
-        self.keys.append([ [312, 250], self.b8, 0xf7, False, [BUTTONX, BUTTONY], self.keydown ] )  # Brake
+        self.keys.append([ [160, 250], self.b4, 0xf3, False, [BUTTONX, BUTTONY], self.keydown ] )  # Horn blue
+        self.keys.append([ [315, 250], self.b8, 0xf7, False, [BUTTONX, BUTTONY], self.keydown ] )  # Brake
 
-        self.keys.append([ [163, 100], self.b6, 0xf4, False, [BUTTONX, BUTTONY], self.keydown ] )  # horn green (quill?)
-        self.keys.append([ [312, 100], self.b9, 102,  False, [BUTTONX, BUTTONY], self.keydown ] )  # next screen
+        self.keys.append([ [160, 100], self.b6, 0xf4, False, [BUTTONX, BUTTONY], self.keydown ] )  # horn green (quill?)
+        self.keys.append([ [315, 100], self.b9, 102,  False, [BUTTONX, BUTTONY], self.keydown ] )  # next screen
 
-    ### unique bitmaps for Aux screen
+        
+    def setupSecond(self):
+        self.screen0 = pygame.image.load('images/main.png').convert()
+        self.knob    = pygame.image.load('images/knob.png').convert()
+        self.right   = pygame.image.load('images/button-right.png').convert()
+        self.left    = pygame.image.load('images/button-left.png').convert()
+
+        # couplers and fans
+        self.cback  = pygame.image.load('images/button-14.png').convert()
+        self.cfront = pygame.image.load('images/button-13.png').convert()
+        self.fan1   = pygame.image.load('images/button-fan1.png').convert()
+        self.fan2   = pygame.image.load('images/button-fan2.png').convert()
+        self.radio  = pygame.image.load('images/button-walkie.png').convert()
+
+        self.mode   = pygame.image.load('images/button-18.png').convert()
+        self.keydown = pygame.image.load('images/button-blank.png').convert()
+
+        #                   display    png         keyvalue         size                down image
+        
+        self.keys.append([ [160, 550], self.cfront,  80, False, [BUTTONX, BUTTONY], self.keydown ] )  # coupler
+        self.keys.append([ [315, 550], self.cback,   81, False, [BUTTONX, BUTTONY], self.keydown ] )  # 
+
+        self.keys.append([ [160, 400], self.fan1, 0xf3, False, [BUTTONX, BUTTONY], self.keydown ] )  # fan f3
+        self.keys.append([ [315, 400], self.fan2, 0xf4, False, [BUTTONX, BUTTONY], self.keydown ] )  # fan f4
+
+        self.keys.append([ [160, 250], self.mode, 0xf8, False, [BUTTONX, BUTTONY], self.keydown ] )   # mode
+        self.keys.append([ [315, 250], self.radio,  16, False, [BUTTONX, BUTTONY], self.keydown ] )   # radio
+
+        self.keys.append([ [160, 100], self.left,  110, False, [BUTTONX, BUTTONY], self.keydown ] )  # left
+        self.keys.append([ [315, 100], self.right, 112, False, [BUTTONX, BUTTONY], self.keydown ] )  # right    
+        
+     
+        
+    ### unique bitmaps for Aux screen - TCS audio assist and Generic Function Code Screen
     def setupAux(self):
         self.screen0 = pygame.image.load('images/main.png').convert()
         self.knob    = pygame.image.load('images/knob.png').convert()
-        self.b9      = pygame.image.load('images/button-right.png').convert()
-        self.b10     = pygame.image.load('images/button-left.png').convert()
+        self.right    = pygame.image.load('images/button-right.png').convert()
+        self.left     = pygame.image.load('images/button-left.png').convert()
 
-        self.b0     = pygame.image.load('images/button-f0.png').convert()
-        self.b1     = pygame.image.load('images/button-f1.png').convert()
-        self.b2     = pygame.image.load('images/button-f2.png').convert()
-        self.b3     = pygame.image.load('images/button-f3.png').convert()
-        self.b4     = pygame.image.load('images/button-f4.png').convert()
-        self.b5     = pygame.image.load('images/button-f5.png').convert()
-        self.b18    = pygame.image.load('images/button-18.png').convert()
-        self.keydown = pygame.image.load('images/button-blank.png').convert()
+        self.cfg    = pygame.image.load('images/button-long-cfg.png').convert()
+        self.b0     = pygame.image.load('images/sm-0.png').convert()
+        self.b1     = pygame.image.load('images/sm-1.png').convert()
+        self.b2     = pygame.image.load('images/sm-2.png').convert()
+        self.b3     = pygame.image.load('images/sm-3.png').convert()
+        self.b4     = pygame.image.load('images/sm-4.png').convert()
+        self.b5     = pygame.image.load('images/sm-5.png').convert()
+        self.b6     = pygame.image.load('images/sm-6.png').convert()
+        self.b7     = pygame.image.load('images/sm-7.png').convert()
+        self.b8     = pygame.image.load('images/sm-8.png').convert()
+        self.b9     = pygame.image.load('images/sm-9.png').convert()
+        self.cfgdn  = pygame.image.load('images/button-long-cfg-blank.png').convert()
 
-        self.keys.append([ [163, 550], self.b1, 0xf1, False, [BUTTONX, BUTTONY], self.keydown ] )  # f1
-        self.keys.append([ [312, 550], self.b2, 0xf2, False, [BUTTONX, BUTTONY], self.keydown ] )  # f2
-
-        self.keys.append([ [163, 400], self.b3, 0xf3, False, [BUTTONX, BUTTONY], self.keydown ] )  # f3
-        self.keys.append([ [312, 400], self.b4, 0xf4, False, [BUTTONX, BUTTONY], self.keydown ] )  # f4
-
-        self.keys.append([ [163, 250], self.b18, 0xf8, False, [BUTTONX, BUTTONY], self.keydown ] )   # mode
-        self.keys.append([ [312, 250], self.b0, 0xf0, False, [BUTTONX, BUTTONY], self.keydown ] )  # f0
-
-        self.keys.append([ [163, 100], self.b10, 110, False, [BUTTONX, BUTTONY], self.keydown ] )  # left
-        self.keys.append([ [312, 100], self.b9,  112, False, [BUTTONX, BUTTONY], self.keydown ] )  # right
-
-    def setupAux2(self):
-        self.screen0 = pygame.image.load('images/main.png').convert()
-        self.knob    = pygame.image.load('images/knob.png').convert()
-        self.b11      = pygame.image.load('images/button-right.png').convert()
-        self.b12     = pygame.image.load('images/button-left.png').convert()
-
-        self.b5     = pygame.image.load('images/button-f5.png').convert()
-        self.b6     = pygame.image.load('images/button-f6.png').convert()
-        self.b7     = pygame.image.load('images/button-f7.png').convert()
-        self.b8     = pygame.image.load('images/button-f8.png').convert()
-        self.b9     = pygame.image.load('images/button-f9.png').convert()
-        self.b19     = pygame.image.load('images/button-19.png').convert()
+        self.smkeydown = pygame.image.load('images/sm-blank.png').convert()
         self.keydown = pygame.image.load('images/button-blank.png').convert()
         
-        self.keys.append([ [163, 550], self.b5, 0xf5, False, [BUTTONX, BUTTONY], self.keydown ] )  # f5
-        self.keys.append([ [312, 550], self.b6, 0xf6, False, [BUTTONX, BUTTONY], self.keydown ] )  # f6
-
-        self.keys.append([ [163, 400], self.b7, 0xf7, False, [BUTTONX, BUTTONY], self.keydown ] )  # f7
-        self.keys.append([ [312, 400], self.b8, 0xf8, False, [BUTTONX, BUTTONY], self.keydown ] )  # f8
-
-        self.keys.append([ [163, 250], self.b9, 0xf9, False, [BUTTONX, BUTTONY], self.keydown ] )  # f9
-        self.keys.append([ [312, 250], self.b19,  16, False, [BUTTONX, BUTTONY], self.keydown ] )  # f16
-
-        self.keys.append([ [163, 100], self.b12, 110, False, [BUTTONX, BUTTONY], self.keydown ] )  # left
-        self.keys.append([ [312, 100], self.b11,  112, False, [BUTTONX, BUTTONY], self.keydown ] )  # right
+        SMBTX = 97
+        SMBTY = 106   
         
-        
+        SMBCFGX = 197
+
+        self.keys.append([ [163, 564], self.cfg, 0xf8, False, [SMBCFGX, SMBTY],   self.cfgdn ] ) # f8
+        self.keys.append([ [363, 563], self.b0,  0xf0, False, [SMBTX, SMBTY], self.smkeydown ] ) # f0
+
+        self.keys.append([ [163, 459], self.b1, 0xf1, False, [SMBTX, SMBTY], self.smkeydown ] )  # f1
+        self.keys.append([ [263, 459], self.b2, 0xf2, False, [SMBTX, SMBTY], self.smkeydown ] )  # f2
+        self.keys.append([ [363, 459], self.b3, 0xf3, False, [SMBTX, SMBTY], self.smkeydown ] )  # f3
+
+        self.keys.append([ [163, 355], self.b4, 0xf4, False, [SMBTX, SMBTY], self.smkeydown ] )  # f4
+        self.keys.append([ [263, 355], self.b5, 0xf5, False, [SMBTX, SMBTY], self.smkeydown ] )  # f5
+        self.keys.append([ [363, 355], self.b6, 0xf6, False, [SMBTX, SMBTY], self.smkeydown ] )  # f6
+
+        self.keys.append([ [163, 250], self.b7, 0xf7, False, [SMBTX, SMBTY], self.smkeydown ] )  # f7
+        self.keys.append([ [263, 250], self.b8, 0xf8, False, [SMBTX, SMBTY], self.smkeydown ] )  # f8
+        self.keys.append([ [363, 250], self.b9, 0xf9, False, [SMBTX, SMBTY], self.smkeydown ] )  # f9
+
+        self.keys.append([ [160, 100], self.left,  110, False, [SMBTX, SMBTY], self.keydown ] )  # left
+        self.keys.append([ [315, 100], self.right, 112, False, [SMBTX, SMBTY], self.keydown ] )  # right    
+
+       
     def setFonts(self):
         self.font = pygame.font.Font(None, 46)
         self.statfont = pygame.font.Font("fonts/impact.ttf", 26)
@@ -292,7 +244,8 @@ class mainScreen:
     def drawAdapterName(self):
         rtext = self.adapterName
         txt =  self.infofont.render( rtext, True, ( 225,225,225), (0,64,0) )
-        self.surface.blit(txt, (MAINX/2+24, MAINY/42+4) )
+        x = (MAINX/3)+45 - len(rtext)/2
+        self.surface.blit(txt, (x, 21) )
 
     def drawScreen(self):
         self.surface.blit(self.screen0, (0,0))                       # draw main screen
@@ -397,17 +350,27 @@ class mainScreen:
         transmitString = transmitString + chr(0)     ## direction postion not used
         transmitString = transmitString + chr(0)     ## estop not used
         fcode = [0,0,0]                              
-        for i in range(0,6):
+        for i in range(0,len(self.downkeys)):
             if self.downkeys[i]:
                fcode = self.keys[i]
                break
         if fcode != [0,0,0]:
            transmitString = transmitString + chr(fcode[2])
+           #print fcode[2]
         else:
            transmitString = transmitString + chr(0)
 
-        transmitString = transmitString + chr(0)     ## servo 1
-        transmitString = transmitString + chr(0)     ## servo 2
+        # servo 1    
+        if self.downkeys[0] == True:
+           transmitString = transmitString + chr(100)   ## servo 1
+        else:    
+           transmitString = transmitString + chr(0)     ## servo 1
+
+        # servo 1    
+        if self.downkeys[1] == True:
+           transmitString = transmitString + chr(100)   ## servo 2
+        else:    
+           transmitString = transmitString + chr(0)     ## servo 2
            
         for i in range(6,15):
            transmitString = transmitString + chr(0)
@@ -911,6 +874,11 @@ class configScreen:
 
         return transmitString
 
+#
+#####
+#########################################################################################################
+#####
+#
 
 class mainLoop:
     def __init__(self):
@@ -919,7 +887,7 @@ class mainLoop:
         self.toggle = 0
         self.transmitString = "---initialize---"
         self.receiveString  = "0123456789012345"
-        self.adapterName = "HC-05"
+        self.adapterName = "TCS 501 Demo"
         self.displayscreen = 0
         self.mousedown = False
          
@@ -938,13 +906,13 @@ class mainLoop:
         
         ### second screen
         self.auxscreen = mainScreen(self.surface)
-        self.auxscreen.setupAux()
+        self.auxscreen.setupSecond()
         self.auxscreen.setFonts()
         self.auxscreen.setAdapterName(self.adapterName)
         
         ## third screen
         self.auxscreen2 = mainScreen(self.surface)
-        self.auxscreen2.setupAux2()
+        self.auxscreen2.setupAux()
         self.auxscreen2.setFonts()
         self.auxscreen2.setAdapterName(self.adapterName) 
 
@@ -1042,13 +1010,13 @@ class mainLoop:
                 elif self.displayscreen == 2:
                    self.auxscreen2.checkKeys(x,y, True)
                    k,v = self.auxscreen2.getKeyValue()
-                   print k,v
-                   if v == True and k == 6:
+                   #print k,v
+                   if v == True and k == 11:
                       self.displayscreen = 1
                       t = self.auxscreen2.getThrottle()
                       self.auxscreen.setThrottle(t)
-                   elif v == True and k == 7:
-                      self.displayscreen = 0       ## back to start
+                   elif v == True and k == 12:
+                      self.displayscreen = 0       
                       t = self.auxscreen2.getThrottle()
                       self.mainscreen.setThrottle(t)
 
@@ -1056,9 +1024,9 @@ class mainLoop:
                    self.configTwo.checkKeys(x,y, True)
                    k,v = self.configTwo.getKeyValue()
                    #if v == True: print k
-                   if v == True and k == 0:
+                   if v == True and k == 11:
                       self.displayscreen = 2
-                   elif v == True and k == 1:
+                   elif v == True and k == 12:
                       self.displayscreen = 0
                    elif v == True:
                       self.configTwo.updateValuesTwo(k)
