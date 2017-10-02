@@ -362,13 +362,15 @@ class mainScreen:
 
         # servo 1    
         if self.downkeys[0] == True:
-           transmitString = transmitString + chr(100)   ## servo 1
+           transmitString = transmitString + chr(101)   ## servo 1
+           print "transmit 101"
         else:    
            transmitString = transmitString + chr(0)     ## servo 1
 
         # servo 1    
         if self.downkeys[1] == True:
-           transmitString = transmitString + chr(100)   ## servo 2
+           transmitString = transmitString + chr(102)   ## servo 2
+           print "transmit 102"
         else:    
            transmitString = transmitString + chr(0)     ## servo 2
            
