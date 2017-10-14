@@ -467,7 +467,7 @@ class mainLoop:
         self.toggle = 0
         self.transmitString = "---initialize---"
         self.receiveString  = "0123456789012345"
-        self.adapterName = "TCS 501 Demo"
+        self.adapterName = ""
         self.displayscreen = 10
         self.mousedown = False
         self.devices = None
@@ -572,14 +572,16 @@ class mainLoop:
                 self.mousedown = True
                 x, y = pygame.mouse.get_pos()
                 
-                if self.displayscreen == 10:
+                if self.displayscreen == 10:                   ## Bluetooth select screen
                    self.devicescreen.checkKeys(x,y, True)
                    k,v = self.devicescreen.getKeyValue()
                    self.devicescreen.updateName(k)
                    print k, v
                    if v == True and k == 2:
                       name = self.devicescreen.getBlueName()
-                      print name
+                      self.mainscreen.setAdapterName(name)
+                      self.auxscreen.setAdapterName(name)
+                      self.auxscreen2.setAdapterName(name)
                       self.Bluetooth.prepare(name)
                       self.displayscreen = 0
                       
