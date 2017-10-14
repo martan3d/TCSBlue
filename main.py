@@ -24,16 +24,18 @@ class Bluetooth:
         self.BluetoothSocket = autoclass('android.bluetooth.BluetoothSocket')
         self.UUID = autoclass('java.util.UUID')
         self.deviceValid = False
-
+        
+    def getDevices(self):
+        paired_devices = self.BluetoothAdapter.getDefaultAdapter().getBondedDevices().toArray()
+        for p in paired_devices:
+            print p.getName()
+        return paired_devices
+        
     def prepare(self, name):
         paired_devices = self.BluetoothAdapter.getDefaultAdapter().getBondedDevices().toArray()
-        print 'Looking for paired devices'    
-        print "Items ", len(paired_devices)
-        
         for device in paired_devices:
-            name = device.getName()
-            print name
-            if True:                          # connect to first device found for now device.getName() == name:
+            print device.getName()
+            if name == device.getName():
                try:
                   self.socket = device.createRfcommSocketToServiceRecord(self.UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"))
                except:
@@ -119,10 +121,38 @@ class mainScreen:
         self.adapterName = ""
         self.coupler0 = False
         self.coupler1 = False
+        self.BlueDevices = None
+        self.bluenames = []
+        self.nameindex = 0
         
         for i in range(0,25):
             self.downkeys.append(False)
 
+    def setDevices(self, devices):
+        self.BlueDevices = devices
+        self.bluenames = []
+        for d in devices:
+            self.bluenames.append(d.getName())
+
+    def getBlueName(self):
+        return self.bluenames[self.nameindex]
+            
+    def setupDevice(self):
+        self.screen0 = pygame.image.load('images/blank.png').convert()
+        self.smb1    = pygame.image.load('images/sm-button0.png').convert()
+        self.smb0    = pygame.image.load('images/sm-button1.png').convert()
+        self.keydn   = pygame.image.load('images/sm-button-down.png').convert()
+        self.keydown = pygame.image.load('images/button-blank.png').convert()
+        self.b9      = pygame.image.load('images/button-right.png').convert()
+        self.b10     = pygame.image.load('images/button-left.png').convert()
+        self.prg     = pygame.image.load('images/prg.png').convert()
+        self.prgdn   = pygame.image.load('images/prg-down.png').convert()
+        
+        self.keys.append([ [20,  270], self.smb0, 123,  False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 3
+        self.keys.append([ [330, 270], self.smb1, 0xf4, False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 4
+        self.keys.append([ [390, 270], self.prg, 0xf4, False,  [PBX, PBY],           self.prgdn ] )  # cfg prg
+          
+            
     #### unique bitmaps for main screen
     def setupMain(self):
         self.screen0 = pygame.image.load('images/main.png').convert()
@@ -236,7 +266,7 @@ class mainScreen:
         self.font = pygame.font.Font(None, 46)
         self.statfont = pygame.font.Font("fonts/impact.ttf", 26)
         self.infofont = pygame.font.Font("fonts/impact.ttf", 40)
-        self.locofont = pygame.font.Font("fonts/impact.ttf", 100)
+        self.locofont = pygame.font.Font("fonts/impact.ttf", 60)
 
     def setAdapterName(self, name):
         self.adapterName = name
@@ -253,7 +283,36 @@ class mainScreen:
         self.drawKnob()
         self.drawKeys()
         pygame.display.flip()
+        
+    def drawDeviceScreen(self):
+        self.surface.blit(self.screen0, (0,0))                       # draw device main screen
+        txt =  self.locofont.render( "Bluetooth", True, ( 225,225,225), (0,64,0) )
+        self.surface.blit(txt, (124, 60) )
+        txt =  self.infofont.render( "Choose Device", True, ( 225,225,225), (0,64,0) )
+        self.surface.blit(txt, (124, 150) )
+        try:
+           self.drawConfigItem(0, self.bluenames[self.nameindex])
+        except:
+           self.drawConfigItem(0, "no devices found!")
+        self.drawKeys()
+        pygame.display.flip()
 
+    def updateName(self, key):
+        if key == 1:
+           self.nameindex = self.nameindex + 1
+           if self.nameindex > len(self.bluenames):
+              self.nameindex = 0
+        if key == 0:
+           self.nameindex = self.nameindex - 1
+           if self.nameindex < 0:
+              self.nameindex = len(self.bluenames)
+        if key == 2:
+           pass        
+        
+    def drawConfigItem(self, p, text):
+        txt = self.statfont.render(text, True, (255, 255, 255), (0,64,0) )
+        self.surface.blit(txt, (100, p*60+280) )
+       
     def updateKnob(self, x, y):
         if x < 145:
            self.posThrottle = y
@@ -394,487 +453,6 @@ class mainScreen:
 
         return transmitString
 
-#
-# Configuration Screen Class
-#
-
-class configScreen:
-    def __init__(self, surface):
-        self.surface = surface
-        self.keys = []
-        self.downkeys = []
-        self.adapterName = ""
-        self.primemover = []
-        self.airhorn = []
-        self.bell = []
-        self.mastervolume = 50
-        self.airhornvolume = 50
-        self.bellvolume = 50
-        self.primevolume = 50
-        self.pm = 0
-        self.ah = 0
-        self.bl = 0
-        
-        for i in range(0,25):
-            self.downkeys.append(False)
-            
-    def setupTwo(self):
-        self.screen0 = pygame.image.load('images/blank.png').convert()
-        self.smb1    = pygame.image.load('images/sm-button0.png').convert()
-        self.smb0    = pygame.image.load('images/sm-button1.png').convert()
-        self.keydn   = pygame.image.load('images/sm-button-down.png').convert()
-        self.keydown = pygame.image.load('images/button-blank.png').convert()
-        self.b9      = pygame.image.load('images/button-right.png').convert()
-        self.b10     = pygame.image.load('images/button-left.png').convert()
-        self.reset   = pygame.image.load('images/button-reset.png').convert()
-        self.rpress  = pygame.image.load('images/button-rdown.png').convert()
-        self.prg     = pygame.image.load('images/prg.png').convert()
-        self.prgdn   = pygame.image.load('images/prg-down.png').convert()
-
-        self.acceleration = 20
-        self.deceleration = 20
-        self.vstart = 0
-        self.vhigh = 0
-        self.vmid = 0
-        
-        # navigation
-        self.keys.append([ [163, 100], self.b10,  120, False, [BUTTONX, BUTTONY], self.keydown ] )   # left
-        self.keys.append([ [312, 100], self.b9,   121, False, [BUTTONX, BUTTONY], self.keydown ] )   # right
-
-        self.keys.append([ [20,  510], self.smb0, 123,  False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 3
-        self.keys.append([ [330, 510], self.smb1, 0xf4, False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 4
-        self.keys.append([ [390, 510], self.prg, 0xf4, False,  [PBX, PBY],           self.prgdn ] )  # cfg prg
-
-        self.keys.append([ [20,  450], self.smb0, 100, False, [SBUTTONX, SBUTTONY], self.keydn ] )   # cfg 1
-        self.keys.append([ [330, 450], self.smb1, 101, False, [SBUTTONX, SBUTTONY], self.keydn ] )   # cfg 2
-        self.keys.append([ [390, 450], self.prg, 0xf4, False,  [PBX, PBY],           self.prgdn ] )  # cfg prg
-
-        self.keys.append([ [20,  390], self.smb0, 123,  False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 3
-        self.keys.append([ [330, 390], self.smb1, 0xf4, False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 4
-        self.keys.append([ [390, 390], self.prg, 0xf4, False,  [PBX, PBY],           self.prgdn ] )  # cfg prg
-
-        self.keys.append([ [20,  330], self.smb0, 0xfd, False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 5
-        self.keys.append([ [330, 330], self.smb1, 0xfb, False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 6
-        self.keys.append([ [390, 330], self.prg, 0xf4, False,  [PBX, PBY],           self.prgdn ] )  # cfg prg
-
-        self.keys.append([ [20,  270], self.smb0, 0xfd, False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 5
-        self.keys.append([ [330, 270], self.smb1, 0xfb, False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 6
-        self.keys.append([ [390, 270], self.prg, 0xf4, False,  [PBX, PBY],           self.prgdn ] )  # cfg prg
-
-        self.keys.append([ [170,  600], self.reset, 8, False, [RBX, RBY], self.rpress ] )  # reset
-        
-
-    def setupOne(self):
-        self.screen0 = pygame.image.load('images/blank.png').convert()
-        self.smb1    = pygame.image.load('images/sm-button0.png').convert()
-        self.smb0    = pygame.image.load('images/sm-button1.png').convert()
-        self.keydn   = pygame.image.load('images/sm-button-down.png').convert()
-        self.keydown = pygame.image.load('images/button-blank.png').convert()
-        self.b9      = pygame.image.load('images/button-right.png').convert()
-        self.b10     = pygame.image.load('images/button-left.png').convert()
-        self.prg     = pygame.image.load('images/prg.png').convert()
-        self.prgdn   = pygame.image.load('images/prg-down.png').convert()
-
-        self.bell.append("Bell 0")
-        self.bell.append("Bell 1")
-        self.bell.append("Bell 2")
-        self.bell.append("Bell 3")
-        self.bell.append("Bell 4")
-        self.bell.append("Bell 5")
-        self.bell.append("Bell 6")
-        self.bell.append("Bell 7")
-        self.bell.append("Bell 8")
-        self.bell.append("Bell 9")
-        self.bell.append("Bell 10")
-        self.bell.append("Bell 11")
-        self.bell.append("Bell 12")
-        self.bell.append("Bell 13")
-        self.bell.append("Bell 14")
-        self.bell.append("Bell 15")
-        self.bell.append("Bell 16")
-        self.bell.append("Bell 17")
-        self.bell.append("Bell 18")
-        self.bell.append("Bell 19")
-        self.bell.append("Bell 20")
-        self.bell.append("Bell 21")
-
-        self.primemover.append("EMD 567 Non Turbo")
-        self.primemover.append("EMD 645 Turbo")
-        self.primemover.append("EMD 710 Turbo")
-        self.primemover.append("GE FDL-16 Modern")
-        self.primemover.append("ALCO 244")
-
-        self.airhorn.append("Nathan K5LA")
-        self.airhorn.append("Nathan K5LLA")
-        self.airhorn.append("Nathan K5HL")
-        self.airhorn.append("Nathan P5")
-        self.airhorn.append("Nathan P3")
-        self.airhorn.append("Nathan M5")
-        self.airhorn.append("Nathan M3")
-        self.airhorn.append("Wabco E2")
-        self.airhorn.append("Wabco A2")
-        self.airhorn.append("Holden M3H")
-        self.airhorn.append("Holden K5H")
-        self.airhorn.append("Leslie A200")
-        self.airhorn.append("Leslie A125")
-        self.airhorn.append("Leslie A125/A200")
-        self.airhorn.append("Leslie S3L")
-        self.airhorn.append("Leslie S3M")
-        
-        self.keys.append([ [163, 100], self.b10,  120, False, [BUTTONX, BUTTONY], self.keydown ] )   # left
-        self.keys.append([ [312, 100], self.b9,   121, False, [BUTTONX, BUTTONY], self.keydown ] )   # right
-
-        self.keys.append([ [20,  630], self.smb0, 100, False, [SBUTTONX, SBUTTONY], self.keydn ] )   # cfg 1
-        self.keys.append([ [330, 630], self.smb1, 101, False, [SBUTTONX, SBUTTONY], self.keydn ] )   # cfg 2
-        self.keys.append([ [390, 630], self.prg, 0xf4, False,  [PBX, PBY],           self.prgdn ] )  # cfg prg
-
-        self.keys.append([ [20,  570], self.smb0, 100, False, [SBUTTONX, SBUTTONY], self.keydn ] )   # cfg 1
-        self.keys.append([ [330, 570], self.smb1, 101, False, [SBUTTONX, SBUTTONY], self.keydn ] )   # cfg 2
-        self.keys.append([ [390, 570], self.prg, 0xf4, False,  [PBX, PBY],           self.prgdn ] )  # cfg prg
-
-        self.keys.append([ [20,  510], self.smb0, 123,  False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 3
-        self.keys.append([ [330, 510], self.smb1, 0xf4, False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 4
-        self.keys.append([ [390, 510], self.prg, 0xf4, False,  [PBX, PBY],           self.prgdn ] )  # cfg prg
-
-        self.keys.append([ [20,  450], self.smb0, 0xfd, False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 5
-        self.keys.append([ [330, 450], self.smb1, 0xfb, False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 6
-        self.keys.append([ [390, 450], self.prg, 0xf4, False,  [PBX, PBY],           self.prgdn ] )  # cfg prg
-
-        self.keys.append([ [20,  390], self.smb0, 0xfd, False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 5
-        self.keys.append([ [330, 390], self.smb1, 0xfb, False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 6
-        self.keys.append([ [390, 390], self.prg, 0xf4, False,  [PBX, PBY],           self.prgdn ] )  # cfg prg
-
-        self.keys.append([ [20,  330], self.smb0, 0xfd, False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 5
-        self.keys.append([ [330, 330], self.smb1, 0xfb, False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 6
-        self.keys.append([ [390, 330], self.prg, 0xf4, False,  [PBX, PBY],           self.prgdn ] )  # cfg prg
-
-        self.keys.append([ [20,  270], self.smb0, 0xfd, False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 5
-        self.keys.append([ [330, 270], self.smb1, 0xfb, False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 6
-        self.keys.append([ [390, 270], self.prg, 0xf4, False,  [PBX, PBY],           self.prgdn ] )  # cfg prg
-
-    def setFonts(self):
-        self.font = pygame.font.Font(None, 46)
-        self.statfont = pygame.font.Font("fonts/impact.ttf", 26)
-        self.infofont = pygame.font.Font("fonts/impact.ttf", 40)
-        self.locofont = pygame.font.Font("fonts/impact.ttf", 100)
-
-    def setAdapterName(self, name):
-        self.adapterName = name
-
-    def drawAdapterName(self):
-        rtext = self.adapterName
-        txt =  self.infofont.render( rtext, True, ( 225,225,225), (0,64,0) )
-        self.surface.blit(txt, (10, MAINY/42+4) )
-
-    def drawLocoNumberCfg(self):
-        rtext = self.adapterName
-        txt =  self.infofont.render( rtext, True, ( 225,225,225), (0,64,0) )
-        self.surface.blit(txt, (MAINX/3+18, MAINY/42+4) )
-
-    def drawConfigString(self):
-        rtext = "Economi"
-        txt =  self.statfont.render( rtext, True, ( 255,255,255), (0,64,0) )
-        self.surface.blit(txt, (10, 110) )
-        rtext = "Setup"
-        txt = self.statfont.render( rtext, True, (255, 255, 255), (0,64,0) )
-        self.surface.blit(txt, (10, 140) )
-        rtext = "Version 1.0"
-        txt = self.statfont.render( rtext, True, (255, 255, 255), (0,64,0) )
-        self.surface.blit(txt, (10, 210) )
-
-    def drawConfigItem(self, p, text):
-        txt = self.statfont.render(text, True, (255, 255, 255), (0,64,0) )
-        self.surface.blit(txt, (100, p*60+280) )
-
-    def drawConfigVolume(self, p, text, v):
-        txt = self.statfont.render(text, True, (255, 255, 255), (0,64,0) )
-        self.surface.blit(txt, (100, p*60+280) )
-        vol = self.statfont.render(v, True, (255, 255, 255), (0,64,0) )
-        self.surface.blit(vol, (290, p*60+280) )
-
-    def drawScreenTwo(self):
-        self.surface.blit(self.screen0, (0,0))                       # draw main screen
-        self.drawLocoNumberCfg()
-        self.drawConfigString()
-        text = "Acceleration"
-        v = "%d" % self.acceleration
-        self.drawConfigVolume(0, text, v)
-        text = "Deceleration"
-        v = "%d" % self.deceleration
-        self.drawConfigVolume(1, text, v)
-        text = "VStart"
-        v = "%d" % self.vstart
-        self.drawConfigVolume(2, text, v)
-        text = "VMid"
-        v = "%d" % self.vmid
-        self.drawConfigVolume(3, text, v)
-        text = "VHigh"
-        v = "%d" % self.vhigh
-        self.drawConfigVolume(4, text, v)
-
-        self.drawKeys()
-        pygame.display.flip()
-
-    def drawScreen(self):
-        self.surface.blit(self.screen0, (0,0))                       # draw main screen
-        self.drawLocoNumberCfg()
-        self.drawConfigString()
-        self.drawConfigItem(0, self.primemover[self.pm])
-        self.drawConfigItem(1, self.airhorn[self.ah])
-        self.drawConfigItem(2, self.bell[self.bl])
-        text = "Master Volume"
-        vol  = "%d" % self.mastervolume
-        self.drawConfigVolume(3, text, vol)
-        text = "Airhorn Volume"
-        vol  = "%d" % self.airhornvolume
-        self.drawConfigVolume(4, text, vol)
-        text = "Bell Volume"
-        vol = "%d" % self.bellvolume
-        self.drawConfigVolume(5, text, vol)
-        text = "Prime Mover"
-        vol = "%d" % self.primevolume
-        self.drawConfigVolume(6, text, vol)
-
-        self.drawKeys()
-        pygame.display.flip()
-
-        
-    def updateValuesTwo(self, value):
-        # Acceleration
-        if value == 15:
-           self.acceleration = self.acceleration + 1
-           if self.acceleration > 255:
-              self.acceleration = 255
-        if value == 14:
-           self.acceleration = self.acceleration - 1
-           if self.acceleration < 0:
-              self.acceleration = 0
-
-        # Deceleration
-        if value == 12:
-           self.deceleration = self.deceleration + 1
-           if self.deceleration > 100:
-              self.deceleration = 100
-        if value == 11:
-           self.deceleration = self.deceleration - 1
-           if self.deceleration < 0:
-              self.deceleration = 0
-        
-        # vstart
-        if value == 9:
-           self.vstart = self.vstart + 1
-           if self.vstart > 255:
-              self.vstart = 255
-        if value == 8:
-           self.vstart = self.vstart - 1
-           if self.vstart < 0:
-              self.vstart = 0
-              
-        # VMid
-        if value == 6:
-           self.vmid = self.vmid + 1
-           if self.vmid > 255:
-              self.vmid = 255
-        if value == 5:
-           self.vmid = self.vmid - 1
-           if self.vmid < 0:
-              self.vmid = 0           
-        
-        # VHigh
-        if value == 3:
-           self.vhigh = self.vhigh + 1
-           if self.vhigh > 255:
-              self.vhigh = 255
-        if value == 2:
-           self.vhigh = self.vhigh - 1
-           if self.vhigh < 0:
-              self.vhigh = 0           
-                
-        
-    def updateValues(self, value):
-        # prime mover select
-        print value
-        if value == 21:
-           self.pm = self.pm + 1
-           if self.pm > 4:
-              self.pm = 0
-        if value == 20:
-           self.pm = self.pm - 1
-           if self.pm < 0:
-              self.pm = 4
-
-        # horn select
-        if value == 18:
-           self.ah = self.ah + 1
-           if self.ah > 15:
-              self.ah = 0
-        if value == 17:
-           self.ah = self.ah - 1
-           if self.ah < 0:
-              self.ah = 15
-
-        # bell select
-        if value == 15:
-           self.bl = self.bl + 1
-           if self.bl > 21:
-              self.bl = 0
-        if value == 14:
-           self.bl = self.bl - 1
-           if self.bl < 0:
-              self.bl = 21
-
-        # master volume
-        if value == 12:
-           self.mastervolume = self.mastervolume + 5
-           if self.mastervolume > 100:
-              self.mastervolume = 0
-        if value == 11:
-           self.mastervolume = self.mastervolume - 5
-           if self.mastervolume < 0:
-              self.mastervolume = 0
-               
-        # airhorn volume
-        if value == 9:
-           self.airhornvolume = self.airhornvolume + 5
-           if self.airhornvolume > 100:
-              self.airhornvolume = 0
-        if value == 8:
-           self.airhornvolume = self.airhornvolume - 5
-           if self.airhornvolume < 0:
-              self.airhornvolume = 0
-    
-        # bell volume
-        if value == 6:
-           self.bellvolume = self.bellvolume + 5
-           if self.bellvolume > 100:
-              self.bellvolume = 0
-        if value == 5:
-           self.bellvolume = self.bellvolume - 5
-           if self.bellvolume < 0:
-              self.bellvolume = 0
-
-        # prime mover volume
-        if value == 3:
-           self.primevolume = self.primevolume + 5
-           if self.primevolume > 100:
-              self.primevolume = 0
-        if value == 2:
-           self.primevolume = self.primevolume - 5
-           if self.primevolume < 0:
-              self.primevolume = 0
-              
-
-              
-    def drawKeys(self):
-        i = 0
-        for k in self.keys:
-            x,y = k[0]
-            bmp = k[1]
-            dnbmp = k[5]
-            if self.downkeys[i] == False:
-               self.surface.blit(bmp, [x, y])
-            else:
-               self.surface.blit( dnbmp, [x, y])
-            i = i + 1
-
-    def checkKeys(self, x, y, value):
-        i = 0
-        self.downkeys = []
-        for k in self.keys:
-            xb, yb = k[0]
-            maxx, maxy = k[4]
-            if ( (x > xb) and (x < xb + maxx) ) and ( (y > yb) and (y < yb + maxy) ):
-                self.downkeys.append(value)
-            else:
-                self.downkeys.append(False)
-            i = i + 1
-        
-    def getKeyValue(self):
-        i = 0
-        for k in self.downkeys:
-            if k == True:
-               return i, True
-            i = i + 1
-        return 0, False
-        
-    def getCVDataTwo(self):
-        addr, v = self.getKeyValue()
-        if addr == 16:
-           return 3, self.acceleration
-        if addr == 13:
-           return 4, self.deceleration
-        if addr == 10:
-           return 2, self.vstart
-        if addr == 7:
-           return 6, self.vmid
-        if addr == 4:
-           return 5, self.vhigh        
-
-        # RESET BUTTON - LEAVE THIS OFF FOR NOW
-#        if addr == 17:
-#           return 8, 8
-
-        return 0, 0
-
-    def getCVData(self):
-        addr, v = self.getKeyValue()
-        # check for prime mover select
-        if addr == 22:
-           return 123, self.pm        # prime mover CV value address
-           
-        if addr == 19:
-           return 120, self.ah        # airhorn select
-           
-        if addr == 16:                # bell select
-           return 122, self.bl
-           
-        if addr == 13:
-           return 128, self.mastervolume
-           
-        if addr == 10:
-           return 129, self.airhornvolume
-           
-        if addr == 7:
-           return 130, self.bellvolume
-           
-        if addr == 4:
-           return 131, self.primevolume
-
-        return 0, 0
-        
-    def getBTData(self, screen):
-        # 00 - Throttle
-        transmitString = chr(0)   ## NOTE: set to zero in configuration screen, no movement allowed!
-        # 01 - direction
-        transmitString = transmitString + chr(0)   # also set to zero for forward- no movement allowed
-        transmitString = transmitString + chr(0)   # estop zero
-        transmitString = transmitString + chr(0)   # no function code allowed
-
-        # 04 - Servo 0
-        transmitString = transmitString + chr(0)   # no servos
-
-        # 05 - Servo 1
-        transmitString = transmitString + chr(0)
-
-        # 06 - CVADDR HI
-        transmitString = transmitString + chr(0)   ## FILL THESE IN for CV changes
-
-        # 07 - CVADDR
-        if screen == 2:
-           a, v = self.getCVData()
-        elif screen == 3:
-           a, v = self.getCVDataTwo()
-           
-        #if a != 0 : print a, v, screen
-        transmitString = transmitString + chr(a)
-
-        # 08 - CVDATA
-        transmitString = transmitString + chr(v)
-
-        for i in range(8,15):
-           transmitString = transmitString + chr(0)
-
-        return transmitString
 
 #
 #####
@@ -890,21 +468,26 @@ class mainLoop:
         self.transmitString = "---initialize---"
         self.receiveString  = "0123456789012345"
         self.adapterName = "TCS 501 Demo"
-        self.displayscreen = 0
+        self.displayscreen = 10
         self.mousedown = False
+        self.devices = None
          
     def setup(self):
         pygame.init()
         pygame.time.set_timer(TIMEREVENT, 1000 / FPS)
         
         self.surface  = pygame.display.set_mode((MAINX, MAINY))
-
+        
+        ### Bluetooth Device Select Screen
+        self.devicescreen = mainScreen(self.surface)
+        self.devicescreen.setupDevice()
+        self.devicescreen.setFonts()
+        
         ### first screen
         self.mainscreen = mainScreen(self.surface)
         self.mainscreen.setupMain()
         self.mainscreen.setFonts()
         self.mainscreen.setAdapterName(self.adapterName)
-        self.mainscreen.drawScreen()
         
         ### second screen
         self.auxscreen = mainScreen(self.surface)
@@ -918,22 +501,17 @@ class mainLoop:
         self.auxscreen2.setFonts()
         self.auxscreen2.setAdapterName(self.adapterName) 
 
-
         if android:
            android.init()
            android.map_key(android.KEYCODE_BACK, pygame.K_ESCAPE)
            
            # DEMO controls if Bluetooth is enabled
-           if DEMO == True: 
-              return
-           
-           self.Bluetooth = Bluetooth()
-           for i in range(0,2):
-              if self.Bluetooth.prepare(self.adapterName):
-                 break
-              string = "Trying to Connect to %s - %d" % (self.adapterName, i)
-              print string
+#           if DEMO == True: 
+#              return
 
+           self.Bluetooth = Bluetooth()
+           self.devices = self.Bluetooth.getDevices()       # get all devices we are paired with so we can choose one
+           self.devicescreen.setDevices(self.devices)
 ##
 ## Read and Write BT data to/from phone
 ##
@@ -967,6 +545,10 @@ class mainLoop:
 
             # Update things based on the FPS timer
             if ev.type == TIMEREVENT:
+            
+                if self.displayscreen == 10:
+                   self.devicescreen.drawDeviceScreen()
+                
                 if self.displayscreen == 0:
                    self.mainscreen.drawScreen()
                    self.transmitString = self.mainscreen.getBTData(self.displayscreen)
@@ -989,6 +571,18 @@ class mainLoop:
             elif ev.type == pygame.MOUSEBUTTONDOWN and self.mousedown == False:
                 self.mousedown = True
                 x, y = pygame.mouse.get_pos()
+                
+                if self.displayscreen == 10:
+                   self.devicescreen.checkKeys(x,y, True)
+                   k,v = self.devicescreen.getKeyValue()
+                   self.devicescreen.updateName(k)
+                   print k, v
+                   if v == True and k == 2:
+                      name = self.devicescreen.getBlueName()
+                      print name
+                      self.Bluetooth.prepare(name)
+                      self.displayscreen = 0
+                      
                 if self.displayscreen == 0:
                    self.mainscreen.checkKeys(x,y, True)
                    k,v = self.mainscreen.getKeyValue()
@@ -1048,6 +642,11 @@ class mainLoop:
             elif ev.type == pygame.MOUSEBUTTONUP and self.mousedown == True:
                 self.mousedown = False
                 x, y = pygame.mouse.get_pos()
+                
+                if self.displayscreen == 10:
+                   self.devicescreen.checkKeys(x,y, False)
+                   k,v = self.devicescreen.getKeyValue()
+
                 if self.displayscreen == 0:
                    self.mainscreen.checkKeys(x, y, False)
                 elif self.displayscreen == 1:
