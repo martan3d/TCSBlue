@@ -27,8 +27,6 @@ class Bluetooth:
         
     def getDevices(self):
         paired_devices = self.BluetoothAdapter.getDefaultAdapter().getBondedDevices().toArray()
-        for p in paired_devices:
-            print p.getName()
         return paired_devices
         
     def prepare(self, name):
@@ -305,9 +303,8 @@ class mainScreen:
         if key == 0:
            self.nameindex = self.nameindex - 1
            if self.nameindex < 0:
-              self.nameindex = len(self.bluenames)
-        if key == 2:
-           pass        
+              self.nameindex = len(self.bluenames) - 1
+        print 'nameindex', self.nameindex
         
     def drawConfigItem(self, p, text):
         txt = self.statfont.render(text, True, (255, 255, 255), (0,64,0) )
