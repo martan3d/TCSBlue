@@ -300,7 +300,7 @@ class mainScreen:
     def updateName(self, key):
         if key == 1:
            self.nameindex = self.nameindex + 1
-           if self.nameindex > len(self.bluenames):
+           if self.nameindex >= len(self.bluenames):
               self.nameindex = 0
         if key == 0:
            self.nameindex = self.nameindex - 1
