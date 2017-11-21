@@ -1,85 +1,13 @@
-import sys
-import time
 import pygame
 import math
 from pygame import Color, Rect, Surface
-
-# set demo to True to remove bluetooth I/O, 
-# set demo to False for normal operation
-
-DEMO = False
+from bt import Bluetooth
 
 try:
    import android
-   from array import array                                                                                                          
-   from jnius import autoclass
-   from jnius import cast 
 except:
    android = None
 
-class Bluetooth:
-    def __init__(self):
-        self.BluetoothAdapter = autoclass('android.bluetooth.BluetoothAdapter') 
-        self.BluetoothDevice = autoclass('android.bluetooth.BluetoothDevice')
-        self.BluetoothSocket = autoclass('android.bluetooth.BluetoothSocket')
-        self.UUID = autoclass('java.util.UUID')
-        self.deviceValid = False
-        
-    def getDevices(self):
-        paired_devices = self.BluetoothAdapter.getDefaultAdapter().getBondedDevices().toArray()
-        return paired_devices
-        
-    def prepare(self, name):
-        paired_devices = self.BluetoothAdapter.getDefaultAdapter().getBondedDevices().toArray()
-        for device in paired_devices:
-            print device.getName()
-            if name == device.getName():
-               try:
-                  self.socket = device.createRfcommSocketToServiceRecord(self.UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"))
-               except:
-                  print "cannot make connection"
-                  return False
-               try:
-                  self.recv_stream = self.socket.getInputStream()
-               except:
-                  print "failed getInputStream"
-                  return False
-               try:
-                  self.send_stream = self.socket.getOutputStream()
-               except:
-                  print "failed getOutputStream"
-                  return False
-               try:
-                  self.socket.connect()
-                  self.deviceValid = True
-                  return True
-               except:
-                  print "Failed to Connect to BT"
-                  return False
-                  
-                  
-    def connected(self):
-        return self.deviceValid
-        
-    def write(self, sendString):
-        if self.deviceValid:
-           self.send_stream.write([ord(b) if ord(b) <= 127 else ord(b)-256 for b in sendString])
-           self.send_stream.flush()
-           
-    def read(self):
-        datastring = ""
-        if self.deviceValid:
-           c = self.recv_stream.available() 
-           if c > 0:
-              for i in range(c):
-                  datastring = datastring + chr(self.recv_stream.read())
-        return datastring
-        
-    def close(self):
-        if self.deviceValid:
-           self.send_stream.flush()
-           self.socket.close()
-           
 TIMEREVENT = pygame.USEREVENT
 COLORA = (255, 0, 0, 255)
 COLORB = (0, 255, 0, 255)
@@ -102,6 +30,9 @@ RBY = 93
 
 PBX = 81
 PBY = 49
+
+SPBX = 166
+SPBY = 73
 
 KEYS = 13
 
@@ -133,8 +64,13 @@ class mainScreen:
             self.bluenames.append(d.getName())
 
     def getBlueName(self):
-        return self.bluenames[self.nameindex]
-            
+        try:
+           name = self.bluenames[self.nameindex]
+        except:
+           name = "no device"
+           self.bluenames.append(name)
+        return name
+
     def setupDevice(self):
         self.screen0 = pygame.image.load('images/blank.png').convert()
         self.smb1    = pygame.image.load('images/sm-button0.png').convert()
@@ -143,13 +79,13 @@ class mainScreen:
         self.keydown = pygame.image.load('images/button-blank.png').convert()
         self.b9      = pygame.image.load('images/button-right.png').convert()
         self.b10     = pygame.image.load('images/button-left.png').convert()
-        self.prg     = pygame.image.load('images/prg.png').convert()
-        self.prgdn   = pygame.image.load('images/prg-down.png').convert()
+        self.prg     = pygame.image.load('images/select.png').convert()
+        self.prgdn   = pygame.image.load('images/select-down.png').convert()
         
-        self.keys.append([ [20,  270], self.smb0, 123,  False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 3
-        self.keys.append([ [330, 270], self.smb1, 0xf4, False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 4
-        self.keys.append([ [390, 270], self.prg, 0xf4, False,  [PBX, PBY],           self.prgdn ] )  # cfg prg
-          
+        self.keys.append([ [20,  270], self.smb0, 0, False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 3
+        self.keys.append([ [400, 270], self.smb1, 1, False, [SBUTTONX, SBUTTONY], self.keydn ] )  # cfg 4
+        self.keys.append([ [160, 370], self.prg,  2, False, [SPBX, SPBY],         self.prgdn ] )  # cfg prg
+
             
     #### unique bitmaps for main screen
     def setupMain(self):
@@ -178,7 +114,7 @@ class mainScreen:
         self.keys.append([ [315, 250], self.b8, 0xf7, False, [BUTTONX, BUTTONY], self.keydown ] )  # Brake
 
         self.keys.append([ [160, 100], self.b6, 0xf4, False, [BUTTONX, BUTTONY], self.keydown ] )  # horn green (quill?)
-        self.keys.append([ [315, 100], self.b9, 102,  False, [BUTTONX, BUTTONY], self.keydown ] )  # next screen
+        self.keys.append([ [315, 100], self.b9, 7,  False, [BUTTONX, BUTTONY], self.keydown ] )  # next screen
 
         
     def setupSecond(self):
@@ -199,8 +135,8 @@ class mainScreen:
 
         #                   display    png         keyvalue         size                down image
         
-        self.keys.append([ [160, 550], self.cfront,  80, False, [BUTTONX, BUTTONY], self.keydown ] )  # coupler
-        self.keys.append([ [315, 550], self.cback,   81, False, [BUTTONX, BUTTONY], self.keydown ] )  # 
+        self.keys.append([ [160, 550], self.cfront, 200, False, [BUTTONX, BUTTONY], self.keydown ] )  # coupler
+        self.keys.append([ [315, 550], self.cback,  201, False, [BUTTONX, BUTTONY], self.keydown ] )  # 
 
         self.keys.append([ [160, 400], self.fan1, 0xf3, False, [BUTTONX, BUTTONY], self.keydown ] )  # fan f3
         self.keys.append([ [315, 400], self.fan2, 0xf4, False, [BUTTONX, BUTTONY], self.keydown ] )  # fan f4
@@ -208,8 +144,8 @@ class mainScreen:
         self.keys.append([ [160, 250], self.mode, 0xf8, False, [BUTTONX, BUTTONY], self.keydown ] )   # mode
         self.keys.append([ [315, 250], self.radio,  16, False, [BUTTONX, BUTTONY], self.keydown ] )   # radio
 
-        self.keys.append([ [160, 100], self.left,  110, False, [BUTTONX, BUTTONY], self.keydown ] )  # left
-        self.keys.append([ [315, 100], self.right, 112, False, [BUTTONX, BUTTONY], self.keydown ] )  # right    
+        self.keys.append([ [160, 100], self.left,  6, False, [BUTTONX, BUTTONY], self.keydown ] )  # left
+        self.keys.append([ [315, 100], self.right, 7, False, [BUTTONX, BUTTONY], self.keydown ] )  # right    
         
      
         
@@ -256,8 +192,8 @@ class mainScreen:
         self.keys.append([ [263, 250], self.b8, 0xf8, False, [SMBTX, SMBTY], self.smkeydown ] )  # f8
         self.keys.append([ [363, 250], self.b9, 0xf9, False, [SMBTX, SMBTY], self.smkeydown ] )  # f9
 
-        self.keys.append([ [160, 100], self.left,  110, False, [SMBTX, SMBTY], self.keydown ] )  # left
-        self.keys.append([ [315, 100], self.right, 112, False, [SMBTX, SMBTY], self.keydown ] )  # right    
+        self.keys.append([ [160, 100], self.left,  6, False, [SMBTX, SMBTY], self.keydown ] )  # left
+        self.keys.append([ [315, 100], self.right, 7, False, [SMBTX, SMBTY], self.keydown ] )  # right    
 
        
     def setFonts(self):
@@ -294,6 +230,20 @@ class mainScreen:
            self.drawConfigItem(0, "no devices found!")
         self.drawKeys()
         pygame.display.flip()
+        
+    def setBlueNames(self, devices):
+        for d in devices:
+            self.bluenames.append(d.getName())
+        print self.bluenames
+
+    def getBlueName(self):
+        try:
+           name = self.bluenames[self.nameindex]
+        except:
+           name = "no device"
+           self.bluenames.append(name)
+        return name
+
 
     def updateName(self, key):
         if key == 1:
@@ -363,93 +313,36 @@ class mainScreen:
         i = 0
         for k in self.downkeys:
             if k == True:
-               return i, True
+               return self.keys[i][2], True
             i = i + 1
         return 0, False
 
-    def buildStringMain(self, transmitString):
-        # 01 - direction
-        if self.downkeys[0]:
-           transmitString = transmitString + chr(1)
-        else:
-           transmitString = transmitString + chr(0)
-        # 02 - ESTOP
-        if self.downkeys[1]:
-           transmitString = transmitString + chr(1)
-        else:
-           transmitString = transmitString + chr(0)
-        fcode = [0,0,0]
-        for i in range(2,7):
-            if self.downkeys[i]:
-               fcode = self.keys[i]
-               break
-        if fcode != [0,0,0]:
-           transmitString = transmitString + chr(fcode[2])
-        else:
-           transmitString = transmitString + chr(0)
-        # 04 - Servo 0
-        transmitString = transmitString + chr(0)
-        # 05 - Servo 1
-        transmitString = transmitString + chr(0)
-        # 06 - CVADDR HI
-        transmitString = transmitString + chr(0)
-        # 07 - CVADDR
-        transmitString = transmitString + chr(0)
-        # 08 - CVDATA
-        transmitString = transmitString + chr(0)
-        for i in range(8,15):
-           transmitString = transmitString + chr(0)
-
-        return transmitString    
-                
-    def buildStringAux(self, transmitString):
-        transmitString = transmitString + chr(0)     ## direction postion not used
-        transmitString = transmitString + chr(0)     ## estop not used
-        fcode = [0,0,0]                              
-        for i in range(0,len(self.downkeys)):
-            if self.downkeys[i]:
-               fcode = self.keys[i]
-               break
-        if fcode != [0,0,0]:
-           transmitString = transmitString + chr(fcode[2])
-           #print fcode[2]
-        else:
-           transmitString = transmitString + chr(0)
-
-        # servo 1    
-        if self.downkeys[0] == True:
-           transmitString = transmitString + chr(101)   ## servo 1
-           print "transmit 101"
-        else:    
-           transmitString = transmitString + chr(0)     ## servo 1
-
-        # servo 1    
-        if self.downkeys[1] == True:
-           transmitString = transmitString + chr(102)   ## servo 2
-           print "transmit 102"
-        else:    
-           transmitString = transmitString + chr(0)     ## servo 2
-           
-        for i in range(6,15):
-           transmitString = transmitString + chr(0)
-
-        return transmitString    
-                
-    def getBTData(self, displayscreen):
-        # 00 - Throttle
+    def setKnob(self, x, y):
         t = self.posThrottle
-        t = abs( (620-t)/5 )
-        transmitString = chr(t)
+        a = (630-t)/5
+        if a < 0:
+           a = 0
+        return a
 
-        if displayscreen == 0:
-           return self.buildStringMain(transmitString)
-        elif displayscreen == 1:
-           return self.buildStringAux(transmitString)
-        elif displayscreen == 2:
-           return self.buildStringAux(transmitString)
+    def setServos(self):
+        # 00 - command code = 10
+        tstr = chr(10)
+        # 01 - throttle - Servo 0
+        t = self.posThrottle
+        a = abs( (620-t)/5 )
+        tstr = tstr + chr(a)
+        # 02 - Servo 1
+        u = self.posKnob1
+        b = abs( (620-u)/2 )
+        tstr = tstr + chr(b)
+        # 03 - Servo 2
+        v = self.posKnob2
+        c = abs( (620-v)/2 )
+        tstr = tstr + chr(c)
 
-        return transmitString
-
+        for i in range(4,16):
+            tstr = tstr + chr(0)
+        return tstr 
 
 #
 #####
@@ -464,10 +357,24 @@ class mainLoop:
         self.toggle = 0
         self.transmitString = "---initialize---"
         self.receiveString  = "0123456789012345"
+        self.saveString = "0123456789012345"
+        self.sendString = ""
         self.adapterName = ""
         self.displayscreen = 10
         self.mousedown = False
         self.devices = None
+        self.direction = 0
+        self.updateServo1 = False
+        self.updateServo0 = False
+        self.updateThrottle = False
+        self.servoCounter1 = 0
+        self.servoCounter0 = 0
+        self.servoIncrement1 = 1
+        self.servoIncrement0 = 1
+        self.servoMax1 = 100
+        self.servoMin1 = 0
+        self.servoMax0 = 100
+        self.servoMin0 = 0
          
     def setup(self):
         pygame.init()
@@ -501,29 +408,78 @@ class mainLoop:
         if android:
            android.init()
            android.map_key(android.KEYCODE_BACK, pygame.K_ESCAPE)
-           
-           # DEMO controls if Bluetooth is enabled
-#           if DEMO == True: 
-#              return
-
            self.Bluetooth = Bluetooth()
-           self.devices = self.Bluetooth.getDevices()       # get all devices we are paired with so we can choose one
-           self.devicescreen.setDevices(self.devices)
+           self.devices = self.Bluetooth.getDevices()
+           self.devicescreen.setBlueNames(self.devices) 
+       
 ##
 ## Read and Write BT data to/from phone
 ##
             
-    def rwBluetooth(self):                                          # read bluetooth
-        self.toggle = self.toggle + 1                               # this is called 30 times per sec
-        if self.toggle == 2:                                        # toggle throttles the data flow
-           if android:
-              self.Bluetooth.write(self.transmitString)
-        if self.toggle == 4:
-           self.toggle = 0
-           if android:
-              t = self.Bluetooth.read()
-              if t != "":
-                 self.receiveString = t
+    def writeBluetooth(self):
+        if android:
+           self.Bluetooth.write(self.transmitString)
+
+    def readBluetooth(self):
+        if android:
+           t = self.Bluetooth.read()
+           if t != "":
+              self.receiveString = t
+
+    def setOutputs(self, k):
+        self.transmitString = self.mainscreen.setOutputs(k)
+        self.writeBluetooth()
+
+    def setEstop(self):
+        self.transmitString = chr(18) + chr(0) + '              '
+        self.writeBluetooth()
+        
+    def setDCCThrottle(self, s):
+        self.transmitString = chr(13) + chr(s) + '              '
+        self.writeBluetooth()
+        print "writeBT ", s
+
+    def setDCCFunc(self, f):
+        self.transmitString = chr(14) + chr(f) + '              '
+        self.writeBluetooth()
+
+    def setExtendedDCCFunc(self, f):
+        self.transmitString = chr(15) + chr(f) + '              '
+        self.writeBluetooth()
+
+    def updateServoCoupler0(self, f):
+        self.transmitString = chr(19) + chr(f) + '              '
+        self.writeBluetooth()
+
+    def updateServoCoupler1(self, f):
+        self.transmitString = chr(20) + chr(f) + '              '
+        self.writeBluetooth()
+        
+    def setServoThrottle(self, s):
+        self.transmitString = chr(21) + chr(s) + '              '
+        self.writeBluetooth()
+
+    def setCV(self, a, d):
+        h = ( a & 0xff00 ) >> 8
+        l = ( a & 0x00ff )
+        self.transmitString = chr(16) + chr(l) + chr(h) + chr(d) + '            '
+        self.writeBluetooth()
+        
+    def setServos(self):
+        self.transmitString = self.mainscreen.setServos()
+        self.writeBluetooth()  
+
+    def setKnob(self, x, y):
+        self.transmitString = self.mainscreen.setKnob( x, y )
+        self.writeBluetooth()  
+           
+    def setDirection(self):
+        if self.direction == 1:
+           self.direction = 0
+        else:
+           self.direction = 1
+        self.transmitString = chr(17) + chr(self.direction) + '              '
+        self.writeBluetooth()
 ##
 ##
 ## Main Run Loop
@@ -539,32 +495,69 @@ class mainLoop:
             if android:
                 if android.check_pause():
                     android.wait_for_resume()
-
+                   
+            ##########################################################################################                   
+            #
             # Update things based on the FPS timer
-            if ev.type == TIMEREVENT:
             
+            if ev.type == TIMEREVENT:
                 if self.displayscreen == 10:
                    self.devicescreen.drawDeviceScreen()
-                
                 if self.displayscreen == 0:
                    self.mainscreen.drawScreen()
-                   self.transmitString = self.mainscreen.getBTData(self.displayscreen)
                 elif self.displayscreen == 1:
                    self.auxscreen.drawScreen()
-                   self.transmitString = self.auxscreen.getBTData(self.displayscreen)
                 elif self.displayscreen == 2:
                    self.auxscreen2.drawScreen()
-                   self.transmitString = self.auxscreen2.getBTData(self.displayscreen)
                 elif self.displayscreen == 3:
                    self.configTwo.drawScreenTwo()
-                   self.transmitString = self.configTwo.getBTData(self.displayscreen)
-                   
-                if android:
-                   if DEMO == False:
-                      if self.Bluetooth.connected():
-                         self.rwBluetooth()
 
+                # be sure bytes are not backing up in the BT interface
+                
+                self.readBluetooth()
+   
+                # update the throttle if needed
+
+                if self.updateThrottle == True:
+                   if self.displayscreen == 0:
+                      self.mainscreen.updateKnob(x,y)
+                      a = self.mainscreen.setKnob(x, v)
+                   elif self.displayscreen == 1:
+                      self.auxscreen.updateKnob(x,y)
+                      a = self.auxscreen.setKnob(x, v)
+                   elif self.displayscreen == 2:
+                      self.auxscreen2.updateKnob(x,y)
+                      a = self.auxscreen2.setKnob(x, v)
+                   self.setDCCThrottle(a)
+                # Coupler Servos
+                   
+                elif self.updateServo1 == True:
+                   self.servoCounter1 = self.servoCounter1 + self.servoIncrement1
+                   if self.servoCounter1 > self.servoMax1:
+                      self.servoCounter1 = self.servoMax1
+                      self.updateServo1 = False
+                      self.servoIncrement1 = -2
+                   if self.servoCounter1 <= self.servoMin1:
+                      self.updateServo1 = False
+                      self.servoIncrement1 = 2
+                   self.updateServoCoupler1(self.servoCounter1)
+                   
+                elif self.updateServo0 == True:
+                   self.servoCounter0 = self.servoCounter0 + self.servoIncrement0 
+                   if self.servoCounter0 > self.servoMax0:
+                      self.servoCounter0 = self.servoMax0
+                      self.updateServo0 = False
+                      self.servoIncrement0 = -2
+                   if self.servoCounter0 <= self.servoMin0:
+                      self.updateServo0 = False
+                      self.servoIncrement0 = 2                      
+                   self.updateServoCoupler0(self.servoCounter0)
+
+                   
+            ###########################################################################################################
+            #
             # process any user input
+            
             elif ev.type == pygame.MOUSEBUTTONDOWN and self.mousedown == False:
                 self.mousedown = True
                 x, y = pygame.mouse.get_pos()
@@ -573,73 +566,111 @@ class mainLoop:
                    self.devicescreen.checkKeys(x,y, True)
                    k,v = self.devicescreen.getKeyValue()
                    self.devicescreen.updateName(k)
-                   print k, v
+
                    if v == True and k == 2:
                       name = self.devicescreen.getBlueName()
                       self.mainscreen.setAdapterName(name)
                       self.auxscreen.setAdapterName(name)
                       self.auxscreen2.setAdapterName(name)
-                      self.Bluetooth.prepare(name)
+                      try:
+                         self.BTValid = self.Bluetooth.prepare(name)
+                         self.setDCCThrottle(0)
+                      except:
+                         pass
                       self.displayscreen = 0
+                   elif v == True:
+                      self.devicescreen.updateName(k)
                       
+            ###########################################################################################################
+     
+                # Main display - read button presses, build transmit string     
                 if self.displayscreen == 0:
                    self.mainscreen.checkKeys(x,y, True)
                    k,v = self.mainscreen.getKeyValue()
-                   if v == True and k == 7:
-                      t = self.mainscreen.getThrottle()
+
+                   if v == True and k == 7:                     ## screen change keys, no need to send data for these
+                      t = self.mainscreen.getThrottle()         ## just move to next screen state
                       self.auxscreen.setThrottle(t)             ## keep both screen throttles in sync
                       self.displayscreen = 1
+                   elif v == True:
+                      if k > 239:
+                         self.setDCCFunc(k)      # Function codes from screen 0
+                      elif k == 100:
+                         self.setDirection()
+                      elif k == 101:
+                         self.setEstop()
 
+            ###########################################################################################################
+                 
+                # Second Screen, harvest input, build string for transmit
                 elif self.displayscreen == 1:
                    self.auxscreen.checkKeys(x,y, True)
                    k,v = self.auxscreen.getKeyValue()
+
+                   # screen navigation first, check these
                    if v == True and k == 6:
                       t = self.auxscreen.getThrottle()
                       self.mainscreen.setThrottle(t)
                       self.displayscreen = 0
+                      
                    if v == True and k == 7:
                       self.displayscreen = 2
                       t = self.auxscreen.getThrottle()
                       self.auxscreen2.setThrottle(t)
-
+                   if v == True:
+                      print k
+                      if k > 239:
+                         self.setDCCFunc(k)
+                      elif k == 200:
+                         self.updateServo0 = True
+                      elif k == 201:
+                         self.updateServo1 = True
+                      elif k == 16:
+                         self.setExtendedDCCFunc(k)
+                      
+            ###########################################################################################################
+                            
+                ## TCS screen 2
                 elif self.displayscreen == 2:
                    self.auxscreen2.checkKeys(x,y, True)
                    k,v = self.auxscreen2.getKeyValue()
-                   #print k,v
-                   if v == True and k == 11:
+ 
+                   if v == True and k == 6:
                       self.displayscreen = 1
                       t = self.auxscreen2.getThrottle()
                       self.auxscreen.setThrottle(t)
-                   elif v == True and k == 12:
+                      
+                   elif v == True and k == 7:
                       self.displayscreen = 0       
                       t = self.auxscreen2.getThrottle()
                       self.mainscreen.setThrottle(t)
 
-                elif self.displayscreen == 3:
-                   self.configTwo.checkKeys(x,y, True)
-                   k,v = self.configTwo.getKeyValue()
-                   #if v == True: print k
-                   if v == True and k == 11:
-                      self.displayscreen = 2
-                   elif v == True and k == 12:
-                      self.displayscreen = 0
                    elif v == True:
-                      self.configTwo.updateValuesTwo(k)
+                      if k > 239:
+                         self.setDCCFunc(k)
                       
+            ###########################################################################################################
+                     
             # Check mouse motion for knob
             elif ev.type == pygame.MOUSEMOTION and self.mousedown == True:
                if self.mousedown:
                    x, y = pygame.mouse.get_pos()
                    if self.displayscreen == 0:
                       self.mainscreen.updateKnob(x,y)
+                      self.updateThrottle = True
+                    
                    elif self.displayscreen == 1:
                       self.auxscreen.updateKnob(x,y)
+                      self.updateThrottle = True
+
                    elif self.displayscreen == 2:
                       self.auxscreen2.updateKnob(x,y)
+                      self.updateThrottle = True
                 
             # Mouse up event, check keys
             elif ev.type == pygame.MOUSEBUTTONUP and self.mousedown == True:
                 self.mousedown = False
+                self.updateThrottle = False
                 x, y = pygame.mouse.get_pos()
                 
                 if self.displayscreen == 10:
@@ -658,7 +689,8 @@ class mainLoop:
             # Back or escape ends the app
             elif ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE:
                 self.running = False
-                if android and DEMO == False:
+                self.setDCCThrottle(0)
+                if android:
                    self.Bluetooth.close()
                 break
 
