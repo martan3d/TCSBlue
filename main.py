@@ -271,7 +271,7 @@ class mainScreen:
         self.posThrottle = t
 
     def drawKnob(self):
-        if self.posThrottle > self.lastThrottle + 300 or self.posThrottle < self.lastThrottle - 300:
+        if self.posThrottle > self.lastThrottle + 450 or self.posThrottle < self.lastThrottle - 450:
            self.posThrottle = self.lastThrottle
 
         self.lastThrottle = self.posThrottle
