@@ -15,7 +15,7 @@ WHITE = (255,255,255)
 FPS = 30
 
 MAINX = 480
-MAINY = 720
+MAINY = 854
 SPDX  = MAINX/4 + 15
 SPDY  = MAINX/3
 
@@ -45,13 +45,13 @@ class mainScreen:
         self.surface = surface
         self.keys = []
         self.downkeys = []
-        self.posThrottle = 630
+        self.posThrottle = 649
         self.lastThrottle = 500
         self.adapterName = ""
         self.coupler0 = False
         self.coupler1 = False
         self.BlueDevices = None
-        self.bluenames = []
+        self.bluenames = ["no device"]
         self.nameindex = 0
         
         for i in range(0,25):
@@ -99,22 +99,22 @@ class mainScreen:
         self.b4      = pygame.image.load('images/button4.png').convert()
         self.b5      = pygame.image.load('images/button5.png').convert()
         self.b6      = pygame.image.load('images/button6.png').convert()
-        self.b7      = pygame.image.load('images/button7.png').convert()
+        #self.b7      = pygame.image.load('images/button7.png').convert()
         self.b8      = pygame.image.load('images/button8.png').convert()
         self.b9      = pygame.image.load('images/button-right.png').convert()
         self.keydown = pygame.image.load('images/button-blank.png').convert()
 
-        self.keys.append([ [160, 550], self.b0, 100, False, [BUTTONX, BUTTONY], self.keydown ] )   # direction
-        self.keys.append([ [315, 550], self.b5, 101, False, [BUTTONX, BUTTONY], self.keydown ] )   # stop
+        self.keys.append([ [160, 600], self.b0, 100, False, [BUTTONX, BUTTONY], self.keydown ] )   # direction
+        self.keys.append([ [315, 600], self.b5, 101, False, [BUTTONX, BUTTONY], self.keydown ] )   # stop
 
-        self.keys.append([ [160, 400], self.b1, 0xf0, False, [BUTTONX, BUTTONY], self.keydown ] )  # Lights
-        self.keys.append([ [315, 400], self.b2, 0xf1, False, [BUTTONX, BUTTONY], self.keydown ] )  # Bell
+        self.keys.append([ [160, 450], self.b1, 0xf0, False, [BUTTONX, BUTTONY], self.keydown ] )  # Lights
+        self.keys.append([ [315, 450], self.b2, 0xf1, False, [BUTTONX, BUTTONY], self.keydown ] )  # Bell
 
-        self.keys.append([ [160, 250], self.b4, 0xf3, False, [BUTTONX, BUTTONY], self.keydown ] )  # Horn blue
-        self.keys.append([ [315, 250], self.b8, 0xf7, False, [BUTTONX, BUTTONY], self.keydown ] )  # Brake
+        self.keys.append([ [160, 300], self.b4, 0xf3, False, [BUTTONX, BUTTONY], self.keydown ] )  # Horn blue
+        self.keys.append([ [315, 300], self.b8, 0xf7, False, [BUTTONX, BUTTONY], self.keydown ] )  # Brake
 
-        self.keys.append([ [160, 100], self.b6, 0xf4, False, [BUTTONX, BUTTONY], self.keydown ] )  # horn green (quill?)
-        self.keys.append([ [315, 100], self.b9, 7,  False, [BUTTONX, BUTTONY], self.keydown ] )  # next screen
+        self.keys.append([ [160, 150], self.b6, 0xf4, False, [BUTTONX, BUTTONY], self.keydown ] )  # horn green (quill?)
+        self.keys.append([ [315, 150], self.b9, 7,  False, [BUTTONX, BUTTONY], self.keydown ] )  # next screen
 
         
     def setupSecond(self):
@@ -135,17 +135,17 @@ class mainScreen:
 
         #                   display    png         keyvalue         size                down image
         
-        self.keys.append([ [160, 550], self.cfront, 200, False, [BUTTONX, BUTTONY], self.keydown ] )  # coupler
-        self.keys.append([ [315, 550], self.cback,  201, False, [BUTTONX, BUTTONY], self.keydown ] )  # 
+        self.keys.append([ [160, 600], self.cfront, 200, False, [BUTTONX, BUTTONY], self.keydown ] )  # coupler
+        self.keys.append([ [315, 600], self.cback,  201, False, [BUTTONX, BUTTONY], self.keydown ] )  # 
 
-        self.keys.append([ [160, 400], self.fan1, 0xf3, False, [BUTTONX, BUTTONY], self.keydown ] )  # fan f3
-        self.keys.append([ [315, 400], self.fan2, 0xf4, False, [BUTTONX, BUTTONY], self.keydown ] )  # fan f4
+        self.keys.append([ [160, 450], self.fan1, 0xf3, False, [BUTTONX, BUTTONY], self.keydown ] )  # fan f3
+        self.keys.append([ [315, 450], self.fan2, 0xf4, False, [BUTTONX, BUTTONY], self.keydown ] )  # fan f4
 
-        self.keys.append([ [160, 250], self.mode, 0xf8, False, [BUTTONX, BUTTONY], self.keydown ] )   # mode
-        self.keys.append([ [315, 250], self.radio,  16, False, [BUTTONX, BUTTONY], self.keydown ] )   # radio
+        self.keys.append([ [160, 300], self.mode, 0xf8, False, [BUTTONX, BUTTONY], self.keydown ] )   # mode
+        self.keys.append([ [315, 300], self.radio,  16, False, [BUTTONX, BUTTONY], self.keydown ] )   # radio
 
-        self.keys.append([ [160, 100], self.left,  6, False, [BUTTONX, BUTTONY], self.keydown ] )  # left
-        self.keys.append([ [315, 100], self.right, 7, False, [BUTTONX, BUTTONY], self.keydown ] )  # right    
+        self.keys.append([ [160, 150], self.left,  6, False, [BUTTONX, BUTTONY], self.keydown ] )  # left
+        self.keys.append([ [315, 150], self.right, 7, False, [BUTTONX, BUTTONY], self.keydown ] )  # right    
         
      
         
@@ -177,23 +177,23 @@ class mainScreen:
         
         SMBCFGX = 197
 
-        self.keys.append([ [163, 564], self.cfg, 0xf8, False, [SMBCFGX, SMBTY],   self.cfgdn ] ) # f8
-        self.keys.append([ [363, 563], self.b0,  0xf0, False, [SMBTX, SMBTY], self.smkeydown ] ) # f0
+        self.keys.append([ [163, 614], self.cfg, 0xf8, False, [SMBCFGX, SMBTY],   self.cfgdn ] ) # f8
+        self.keys.append([ [363, 614], self.b0,  0xf0, False, [SMBTX, SMBTY], self.smkeydown ] ) # f0
 
-        self.keys.append([ [163, 459], self.b1, 0xf1, False, [SMBTX, SMBTY], self.smkeydown ] )  # f1
-        self.keys.append([ [263, 459], self.b2, 0xf2, False, [SMBTX, SMBTY], self.smkeydown ] )  # f2
-        self.keys.append([ [363, 459], self.b3, 0xf3, False, [SMBTX, SMBTY], self.smkeydown ] )  # f3
+        self.keys.append([ [163, 509], self.b1, 0xf1, False, [SMBTX, SMBTY], self.smkeydown ] )  # f1
+        self.keys.append([ [263, 509], self.b2, 0xf2, False, [SMBTX, SMBTY], self.smkeydown ] )  # f2
+        self.keys.append([ [363, 509], self.b3, 0xf3, False, [SMBTX, SMBTY], self.smkeydown ] )  # f3
 
-        self.keys.append([ [163, 355], self.b4, 0xf4, False, [SMBTX, SMBTY], self.smkeydown ] )  # f4
-        self.keys.append([ [263, 355], self.b5, 0xf5, False, [SMBTX, SMBTY], self.smkeydown ] )  # f5
-        self.keys.append([ [363, 355], self.b6, 0xf6, False, [SMBTX, SMBTY], self.smkeydown ] )  # f6
+        self.keys.append([ [163, 405], self.b4, 0xf4, False, [SMBTX, SMBTY], self.smkeydown ] )  # f4
+        self.keys.append([ [263, 405], self.b5, 0xf5, False, [SMBTX, SMBTY], self.smkeydown ] )  # f5
+        self.keys.append([ [363, 405], self.b6, 0xf6, False, [SMBTX, SMBTY], self.smkeydown ] )  # f6
 
-        self.keys.append([ [163, 250], self.b7, 0xf7, False, [SMBTX, SMBTY], self.smkeydown ] )  # f7
-        self.keys.append([ [263, 250], self.b8, 0xf8, False, [SMBTX, SMBTY], self.smkeydown ] )  # f8
-        self.keys.append([ [363, 250], self.b9, 0xf9, False, [SMBTX, SMBTY], self.smkeydown ] )  # f9
+        self.keys.append([ [163, 300], self.b7, 0xf7, False, [SMBTX, SMBTY], self.smkeydown ] )  # f7
+        self.keys.append([ [263, 300], self.b8, 0xf8, False, [SMBTX, SMBTY], self.smkeydown ] )  # f8
+        self.keys.append([ [363, 300], self.b9, 0xf9, False, [SMBTX, SMBTY], self.smkeydown ] )  # f9
 
-        self.keys.append([ [160, 100], self.left,  6, False, [SMBTX, SMBTY], self.keydown ] )  # left
-        self.keys.append([ [315, 100], self.right, 7, False, [SMBTX, SMBTY], self.keydown ] )  # right    
+        self.keys.append([ [160, 150], self.left,  6, False, [SMBTX, SMBTY], self.keydown ] )  # left
+        self.keys.append([ [315, 150], self.right, 7, False, [SMBTX, SMBTY], self.keydown ] )  # right    
 
        
     def setFonts(self):
@@ -209,7 +209,7 @@ class mainScreen:
         rtext = self.adapterName
         txt =  self.infofont.render( rtext, True, ( 225,225,225), (0,64,0) )
         x = (MAINX/3)+45 - len(rtext)/2
-        self.surface.blit(txt, (x, 21) )
+        self.surface.blit(txt, (x, 40) )
 
     def drawScreen(self):
         self.surface.blit(self.screen0, (0,0))                       # draw main screen
@@ -254,16 +254,25 @@ class mainScreen:
            self.nameindex = self.nameindex - 1
            if self.nameindex < 0:
               self.nameindex = len(self.bluenames) - 1
-        print 'nameindex', self.nameindex
+
         
     def drawConfigItem(self, p, text):
         txt = self.statfont.render(text, True, (255, 255, 255), (0,64,0) )
         self.surface.blit(txt, (100, p*60+280) )
        
     def updateKnob(self, x, y):
-        if x < 145:
-           self.posThrottle = y
-           
+        # reject inputs totally out of bounds
+        if x < 20:
+           return
+        if x > 140:
+           return
+        if y > self.posThrottle + 200:
+           return
+        if y < self.posThrottle - 200:
+           return
+        self.posThrottle = y
+#        print "throttle y", y
+        
     def getThrottle(self):
         return self.posThrottle
         
@@ -271,19 +280,13 @@ class mainScreen:
         self.posThrottle = t
 
     def drawKnob(self):
-        if self.posThrottle > self.lastThrottle + 450 or self.posThrottle < self.lastThrottle - 450:
-           self.posThrottle = self.lastThrottle
+        if self.posThrottle > 649:
+           self.posThrottle = 649
 
-        self.lastThrottle = self.posThrottle
+        if self.posThrottle < 137:
+           self.posThrottle = 137
 
-        if self.posThrottle > 620:
-           self.posThrottle = 620
-
-        if self.posThrottle < 115:
-           self.posThrottle = 115
-
-        t = self.posThrottle
-        self.surface.blit(self.knob, [13, self.posThrottle-50])
+        self.surface.blit(self.knob, [13, self.posThrottle-10])
 
     def drawKeys(self):
         i = 0
@@ -375,12 +378,28 @@ class mainLoop:
         self.servoMin1 = 0
         self.servoMax0 = 100
         self.servoMin0 = 0
-         
+        self.watchdog = 0
+        self.maxx = 0
+        self.maxy = 0        
+
+ 
     def setup(self):
         pygame.init()
         pygame.time.set_timer(TIMEREVENT, 1000 / FPS)
         
+        infoObject = pygame.display.Info()
+        # fill all screen area with background color
+        self.surface  = pygame.display.set_mode((infoObject.current_w, infoObject.current_h))
+        self.surface.fill( (0,0,0))
+        
+        print infoObject.current_w, infoObject.current_h
+        self.maxx = infoObject.current_w
+        self.maxy = infoObject.current_h
+        
+        # resize to our bitmap resolution
+#        self.surface  = pygame.display.set_mode((infoObject.current_w, infoObject.current_h))
         self.surface  = pygame.display.set_mode((MAINX, MAINY))
+        self.surface.fill( (0,0,0))
         
         ### Bluetooth Device Select Screen
         self.devicescreen = mainScreen(self.surface)
@@ -437,8 +456,8 @@ class mainLoop:
     def setDCCThrottle(self, s):
         self.transmitString = chr(13) + chr(s) + '              '
         self.writeBluetooth()
-        print "writeBT ", s
-
+        print "throttle actual", s
+        
     def setDCCFunc(self, f):
         self.transmitString = chr(14) + chr(f) + '              '
         self.writeBluetooth()
@@ -480,6 +499,12 @@ class mainLoop:
            self.direction = 1
         self.transmitString = chr(17) + chr(self.direction) + '              '
         self.writeBluetooth()
+        
+    def resetWatchDog(self):
+        s = 0
+        self.transmitString = chr(23) + chr(s) + '              '
+        self.writeBluetooth()
+
 ##
 ##
 ## Main Run Loop
@@ -552,8 +577,13 @@ class mainLoop:
                       self.updateServo0 = False
                       self.servoIncrement0 = 2                      
                    self.updateServoCoupler0(self.servoCounter0)
-
                    
+                else:
+                   self.watchdog = self.watchdog + 1
+                   if self.watchdog > 30:
+                      self.watchdog = 0
+                      self.resetWatchDog()
+
             ###########################################################################################################
             #
             # process any user input
@@ -618,7 +648,6 @@ class mainLoop:
                       t = self.auxscreen.getThrottle()
                       self.auxscreen2.setThrottle(t)
                    if v == True:
-                      print k
                       if k > 239:
                          self.setDCCFunc(k)
                       elif k == 200:
@@ -689,7 +718,7 @@ class mainLoop:
             # Back or escape ends the app
             elif ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE:
                 self.running = False
-                self.setDCCThrottle(0)
+#                self.setDCCThrottle(0)
                 if android:
                    self.Bluetooth.close()
                 break
