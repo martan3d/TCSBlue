@@ -387,14 +387,14 @@ class mainLoop:
         pygame.init()
         pygame.time.set_timer(TIMEREVENT, 1000 / FPS)
         
-        infoObject = pygame.display.Info()
+#        infoObject = pygame.display.Info()
         # fill all screen area with background color
-        self.surface  = pygame.display.set_mode((infoObject.current_w, infoObject.current_h))
-        self.surface.fill( (0,0,0))
+#        self.surface  = pygame.display.set_mode((infoObject.current_w, infoObject.current_h))
+#        self.surface.fill( (0,0,0))
         
-        print infoObject.current_w, infoObject.current_h
-        self.maxx = infoObject.current_w
-        self.maxy = infoObject.current_h
+#        print infoObject.current_w, infoObject.current_h
+#        self.maxx = infoObject.current_w
+#        self.maxy = infoObject.current_h
         
         # resize to our bitmap resolution
 #        self.surface  = pygame.display.set_mode((infoObject.current_w, infoObject.current_h))
