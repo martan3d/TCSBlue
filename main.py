@@ -449,38 +449,38 @@ class mainLoop:
         self.transmitString = self.mainscreen.setOutputs(k)
         self.writeBluetooth()
 
-    def setEstop(self):
+    def setEstop(self):                         # 12345678901234
         self.transmitString = chr(18) + chr(0) + '              '
         self.writeBluetooth()
         
-    def setDCCThrottle(self, s):
+    def setDCCThrottle(self, s):                # 12345678901234
         self.transmitString = chr(13) + chr(s) + '              '
         self.writeBluetooth()
         print "throttle actual", s
         
-    def setDCCFunc(self, f):
+    def setDCCFunc(self, f):                    # 12345678901234
         self.transmitString = chr(14) + chr(f) + '              '
         self.writeBluetooth()
 
-    def setExtendedDCCFunc(self, f):
+    def setExtendedDCCFunc(self, f):            # 12345678901234
         self.transmitString = chr(15) + chr(f) + '              '
         self.writeBluetooth()
 
-    def updateServoCoupler0(self, f):
+    def updateServoCoupler0(self, f):           # 12345678901234
         self.transmitString = chr(19) + chr(f) + '              '
         self.writeBluetooth()
 
-    def updateServoCoupler1(self, f):
+    def updateServoCoupler1(self, f):           # 12345678901234
         self.transmitString = chr(20) + chr(f) + '              '
         self.writeBluetooth()
         
-    def setServoThrottle(self, s):
+    def setServoThrottle(self, s):              # 12345678901234
         self.transmitString = chr(21) + chr(s) + '              '
         self.writeBluetooth()
 
     def setCV(self, a, d):
         h = ( a & 0xff00 ) >> 8
-        l = ( a & 0x00ff )
+        l = ( a & 0x00ff )                                        # 123456789012
         self.transmitString = chr(16) + chr(l) + chr(h) + chr(d) + '            '
         self.writeBluetooth()
         
@@ -496,14 +496,30 @@ class mainLoop:
         if self.direction == 1:
            self.direction = 0
         else:
-           self.direction = 1
+           self.direction = 1                                # 12345678901234
         self.transmitString = chr(17) + chr(self.direction) + '              '
         self.writeBluetooth()
         
     def resetWatchDog(self):
-        s = 0
+        s = 0                                   # 12345678901234
         self.transmitString = chr(23) + chr(s) + '              '
         self.writeBluetooth()
+        
+    def setWatchDogValue(self):
+        t = 0x0b
+        s = 0xb8                                         # 1234567890123
+        self.transmitString = chr(25) + chr(s) + chr(t) + '             '
+        self.writeBluetooth()
+
+    def setDogMode(self):
+        s = 15    #                               12345678901234
+        self.transmitString = chr(27) + chr(s) + '              '
+        self.writeBluetooth()    
+        
+    def setESCMode(self):
+        s = 1    # set to center off ESC mode   # 12345678901234
+        self.transmitString = chr(24) + chr(s) + '              '
+        self.writeBluetooth()    
 
 ##
 ##
@@ -528,7 +544,7 @@ class mainLoop:
             if ev.type == TIMEREVENT:
                 if self.displayscreen == 10:
                    self.devicescreen.drawDeviceScreen()
-                if self.displayscreen == 0:
+                elif self.displayscreen == 0:
                    self.mainscreen.drawScreen()
                 elif self.displayscreen == 1:
                    self.auxscreen.drawScreen()
@@ -605,6 +621,8 @@ class mainLoop:
                       try:
                          self.BTValid = self.Bluetooth.prepare(name)
                          self.setDCCThrottle(0)
+                         self.setDogMode()
+                         self.setWatchDogValue()
                       except:
                          pass
                       self.displayscreen = 0
@@ -614,7 +632,7 @@ class mainLoop:
             ###########################################################################################################
      
                 # Main display - read button presses, build transmit string     
-                if self.displayscreen == 0:
+                elif self.displayscreen == 0:
                    self.mainscreen.checkKeys(x,y, True)
                    k,v = self.mainscreen.getKeyValue()
 
